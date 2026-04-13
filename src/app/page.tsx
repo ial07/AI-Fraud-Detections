@@ -253,7 +253,36 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="container mx-auto p-4 md:p-8 space-y-8">
+      <main className="container mx-auto p-4 md:p-8 space-y-6">
+        
+        {/* AI Protection Impact Banner */}
+        {summary?.ai_performance?.value_protected > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-indigo-600 rounded-2xl p-6 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12">
+              <ShieldCheck className="w-32 h-32" />
+            </div>
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30">
+                  <Zap className="w-8 h-8 text-yellow-300 fill-yellow-300" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight">AI Protected {formatIDR(summary.ai_performance.value_protected)}</h2>
+                  <p className="text-indigo-100 text-sm font-medium mt-1 italic">
+                    Successfully blocked {summary.ai_performance.ai_overrides} critical threats that bypassed standard rule engine logic.
+                  </p>
+                </div>
+              </div>
+              <Badge className="bg-white text-indigo-700 hover:bg-white/90 px-4 py-2 text-sm font-black border-none shadow-md">
+                AZURE AI ENABLED
+              </Badge>
+            </div>
+          </motion.div>
+        )}
         
         {/* Dynamic Toolbar */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -633,6 +662,102 @@ export default function Dashboard() {
                     <div className="space-y-1 bg-muted/20 p-3 rounded-lg">
                       <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Hardware Print</span>
                       <p className="font-mono text-sm font-semibold">{selectedTx.device}</p>
+                    </div>
+                  </div>
+
+                  {/* AI Reasoning Chain — The Winner-Grade Feature */}
+                  <div className="mt-8 space-y-6 pb-12">
+                    <div className="flex items-center gap-2 border-b-2 border-slate-100 dark:border-slate-800 pb-3">
+                      <Zap className="w-5 h-5 text-indigo-500" />
+                      <h4 className="text-sm font-black uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200">AI Reasoning Protocol</h4>
+                    </div>
+
+                    <div className="relative pl-8 space-y-10 before:absolute before:inset-0 before:left-[11px] before:w-[2px] before:bg-slate-200 dark:before:bg-slate-800">
+                      
+                      {/* Step 1: Rule Engine */}
+                      <div className="relative">
+                        <div className="absolute -left-[30px] top-0 w-6 h-6 rounded-full bg-white dark:bg-slate-900 border-2 border-slate-400 flex items-center justify-center z-10">
+                          <Activity className="w-3 h-3 text-slate-500" />
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted px-2 py-0.5 rounded">Step 01</span>
+                             <h5 className="text-sm font-bold text-slate-700 dark:text-slate-300">Rule Engine Analysis</h5>
+                          </div>
+                          <div className="bg-slate-50 dark:bg-slate-800/20 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                            {selectedTx.explanations && selectedTx.explanations.length > 0 ? (
+                              <ul className="space-y-2">
+                                {selectedTx.explanations.map((exp: string, i: number) => (
+                                  <li key={i} className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>
+                                    {exp}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-sm text-green-600 dark:text-green-400 font-medium">No deterministic rule triggers detected. Parameters within standard baseline.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 2: Statistical Multiplexer */}
+                      <div className="relative">
+                        <div className="absolute -left-[30px] top-0 w-6 h-6 rounded-full bg-white dark:bg-slate-900 border-2 border-blue-400 flex items-center justify-center z-10">
+                          <TrendingUp className="w-3 h-3 text-blue-500" />
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">Step 02</span>
+                             <h5 className="text-sm font-bold text-slate-700 dark:text-slate-300">Cross-Signal Interaction</h5>
+                          </div>
+                          <div className="bg-blue-50/30 dark:bg-blue-950/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                            <p className="text-sm text-blue-700 dark:text-blue-300 font-medium leading-relaxed">
+                              Detected {selectedTx.explanations?.length || 0} overlapping risk signals. Multiplexer applied {selectedTx.explanations?.length >= 3 ? '1.5x' : '1.3x'} volatility coefficient for non-linear correlation.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 3: Azure AI Synthesis */}
+                      <div className="relative">
+                        <div className="absolute -left-[30px] top-0 w-6 h-6 rounded-full bg-white dark:bg-slate-900 border-2 border-indigo-500 flex items-center justify-center z-10 shadow-[0_0_10px_rgba(99,102,241,0.3)]">
+                          <Cpu className="w-3 h-3 text-indigo-500" />
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded">Step 03</span>
+                             <h5 className="text-sm font-bold text-slate-700 dark:text-slate-300 italic">Azure AI Intelligence Synthesis</h5>
+                          </div>
+                          <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 p-5 rounded-xl border border-indigo-500/20 shadow-inner">
+                            <div className="flex items-center gap-3 mb-3">
+                              <Badge className="bg-indigo-600 text-[10px] font-black">{selectedTx.fraud_type || 'CLASSIFIED'}</Badge>
+                              <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tight">Confidence: {parseFloat(selectedTx.ai_confidence).toFixed(0)}%</span>
+                            </div>
+                            <p className="text-sm text-slate-800 dark:text-slate-200 font-bold leading-relaxed italic">
+                              "{selectedTx.ai_explanation}"
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Final Stage: Verdict */}
+                      <div className="relative">
+                        <div className="absolute -left-[30px] top-0 w-6 h-6 rounded-full bg-white dark:bg-slate-900 border-2 border-primary flex items-center justify-center z-10">
+                          <ShieldCheck className="w-3 h-3 text-primary" />
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                             <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded">Final Verdict</span>
+                             <h5 className="text-sm font-bold text-slate-700 dark:text-slate-300">Blended Risk Decision</h5>
+                          </div>
+                          <div className={`p-4 rounded-xl border-2 font-black text-center text-lg tracking-tight ${selectedTx.risk_level === 'CRITICAL' || selectedTx.risk_level === 'HIGH' ? 'bg-red-500/10 border-red-500/30 text-red-600' : 'bg-green-500/10 border-green-500/30 text-green-600'}`}>
+                            {selectedTx.is_flagged ? '🚨 TRANSACTION FLAGGED' : '✅ TRANSACTION CLEARED'}
+                            <div className="text-[10px] mt-1 text-muted-foreground uppercase tracking-[0.3em] font-medium">Action: {selectedTx.recommended_action}</div>
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
 
