@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Activity, AlertOctagon, BrainCircuit, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck, Zap, ArrowRightSquare, Cpu, Server, PlayCircle, Loader2 } from "lucide-react";
+import { Activity, AlertOctagon, BrainCircuit, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck, Zap, ArrowRightSquare, Cpu, Server, PlayCircle, Loader2, Fingerprint, Target, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 // IDR Formatting Rule
 const formatIDR = (amount: number) => {
@@ -29,6 +29,16 @@ const RISK_COLORS: Record<string, string> = {
   MEDIUM: '#eab308',   
   HIGH: '#f97316',     
   CRITICAL: '#ef4444'  
+};
+
+const FRAUD_TYPE_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  ACCOUNT_TAKEOVER: { label: 'Account Takeover', color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-950/40' },
+  MONEY_LAUNDERING: { label: 'Money Laundering', color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-950/40' },
+  CARD_TESTING: { label: 'Card Testing', color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-950/40' },
+  SUSPICIOUS_TRANSFER: { label: 'Suspicious Transfer', color: 'text-amber-600', bg: 'bg-amber-100 dark:bg-amber-950/40' },
+  IDENTITY_FRAUD: { label: 'Identity Fraud', color: 'text-rose-600', bg: 'bg-rose-100 dark:bg-rose-950/40' },
+  NORMAL: { label: 'Normal', color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-950/40' },
+  UNKNOWN: { label: 'Unclassified', color: 'text-slate-500', bg: 'bg-slate-100 dark:bg-slate-800' },
 };
 
 export default function Dashboard() {
@@ -156,6 +166,13 @@ export default function Dashboard() {
       case 'MEDIUM': return 'default';
       default: return 'secondary';
     }
+  };
+
+  const scoreToLevel = (score: number) => {
+    if (score >= 86) return 'CRITICAL';
+    if (score >= 61) return 'HIGH';
+    if (score >= 31) return 'MEDIUM';
+    return 'LOW';
   };
 
   const pieData = summary ? [
@@ -308,31 +325,40 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Azure Insights Panel */}
+          {/* AI Performance Panel */}
           <Card className="col-span-1 shadow-md border-t-[3px] border-t-indigo-500">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center text-lg"><Server className="w-5 h-5 text-indigo-500 mr-2"/> Azure Metrics</CardTitle>
+              <CardTitle className="flex items-center text-lg"><BrainCircuit className="w-5 h-5 text-indigo-500 mr-2"/> AI Performance</CardTitle>
+              <CardDescription className="text-xs">Live metrics from hybrid AI scoring engine</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+              <div className="grid grid-cols-2 gap-y-5 gap-x-4">
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">API Calls</p>
-                  <p className="text-3xl font-black mt-1 text-slate-800 dark:text-slate-100">{summary?.azure_metrics?.total_calls_to_llm || 0}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">AI Decisions</p>
+                  <p className="text-2xl font-black mt-1 text-indigo-600 dark:text-indigo-400">{summary?.ai_performance?.ai_assisted || 0}<span className="text-sm font-bold text-muted-foreground">/{summary?.ai_performance?.total_transactions || 0}</span></p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Avg Latency</p>
-                  <p className="text-3xl font-black mt-1 text-slate-800 dark:text-slate-100">{summary?.azure_metrics?.average_latency}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Avg Confidence</p>
+                  <p className="text-2xl font-black mt-1" style={{ color: (summary?.ai_performance?.avg_confidence || 0) >= 80 ? '#22c55e' : (summary?.ai_performance?.avg_confidence || 0) >= 50 ? '#eab308' : '#ef4444' }}>{summary?.ai_performance?.avg_confidence || 0}%</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">AI Uptime</p>
-                  <p className="text-xl font-bold mt-2 text-green-600">{summary?.azure_metrics?.success_rate}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Agreement Rate</p>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <p className="text-2xl font-black text-green-600">{summary?.ai_performance?.agreement_rate || 0}%</p>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">Rule ↔ AI consensus</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Resilience</p>
-                  <p className="text-sm font-bold mt-2 text-slate-700 dark:text-slate-300">
-                    {summary?.azure_metrics?.fallback_triggered ? 'ACTIVE (Rule-Engine)' : 'STANDBY'}
-                  </p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">AI Overrides</p>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <p className="text-2xl font-black text-amber-500">{summary?.ai_performance?.ai_overrides || 0}</p>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">AI changed outcome</p>
                 </div>
+              </div>
+              <div className="mt-4 pt-3 border-t">
+                <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">Fraud Types Classified</p>
+                <p className="text-lg font-black text-slate-800 dark:text-slate-100 mt-0.5">{summary?.ai_performance?.fraud_types_detected || 0} <span className="text-xs font-medium text-muted-foreground">unique categories</span></p>
               </div>
             </CardContent>
           </Card>
@@ -363,15 +389,16 @@ export default function Dashboard() {
             <CardDescription>Select any row to view Explainable AI (XAI) deep context.</CardDescription>
           </CardHeader>
           <CardContent className="overflow-x-auto">
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Time</TableHead>
-                  <TableHead>Entity</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead className="text-right">Value (IDR)</TableHead>
-                  <TableHead className="text-center">Risk Intel</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">Verdict</TableHead>
+                  <TableHead className="w-[90px]">Time</TableHead>
+                  <TableHead className="w-[160px]">Entity</TableHead>
+                  <TableHead className="w-[150px]">Location</TableHead>
+                  <TableHead className="w-[140px] text-right">Value (IDR)</TableHead>
+                  <TableHead className="w-[110px] text-center">Risk Intel</TableHead>
+                  <TableHead className="w-[150px] text-center">AI Classification</TableHead>
+                  <TableHead className="w-[120px] text-right">Verdict</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -380,13 +407,9 @@ export default function Dashboard() {
                     <motion.tr 
                       key={tx.id}
                       initial={{ opacity: 0, x: -10 }}
-                      animate={tx.risk_level === 'CRITICAL' ? { opacity: 1, x: 0, scale: [1, 1.01, 1] } : { opacity: 1, x: 0 }}
+                      animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0 }}
-                      transition={
-                        tx.risk_level === 'CRITICAL' 
-                          ? { delay: idx * 0.05, scale: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' } }
-                          : { delay: idx * 0.05 }
-                      }
+                      transition={{ delay: idx * 0.05 }}
                       onClick={() => handleRowClick(tx)}
                       className={`cursor-pointer hover:bg-muted/50 border-b transition-colors 
                         ${tx.risk_level === 'CRITICAL' ? 'bg-red-500/10 hover:bg-red-500/15 border-l-4 border-l-red-500 shadow-[inset_4px_0_10px_rgba(239,68,68,0.1)]' : ''}
@@ -396,17 +419,17 @@ export default function Dashboard() {
                       <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                         {new Date(tx.created_at).toLocaleTimeString()}
                       </TableCell>
-                      <TableCell>
-                        <div className="font-bold whitespace-nowrap">{tx.user_id}</div>
-                        <div className="text-xs text-muted-foreground whitespace-nowrap">{tx.device || 'Unknown'}</div>
+                      <TableCell className="overflow-hidden">
+                        <div className="font-bold truncate">{tx.user_id}</div>
+                        <div className="text-xs text-muted-foreground truncate">{tx.device || 'Unknown'}</div>
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm truncate max-w-[120px]">{tx.location || "Unknown"}</div>
+                      <TableCell className="overflow-hidden">
+                        <div className="text-sm truncate">{tx.location || "Unknown"}</div>
                       </TableCell>
                       <TableCell className="text-right font-mono font-medium whitespace-nowrap">
                         {formatIDR(tx.amount)}
                       </TableCell>
-                      <TableCell className="text-center min-w-[100px]">
+                      <TableCell className="text-center overflow-hidden">
                         <div className="flex flex-col items-center justify-center gap-1">
                           <Badge 
                             variant={getRiskBadgeVariant(tx.risk_level)} 
@@ -417,6 +440,18 @@ export default function Dashboard() {
                           </Badge>
                           <span className="text-[10px] uppercase tracking-widest font-black" style={{color: RISK_COLORS[tx.risk_level]}}>{tx.risk_level}</span>
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {tx.fraud_type && tx.fraud_type !== 'UNKNOWN' && tx.fraud_type !== 'NORMAL' ? (
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${FRAUD_TYPE_CONFIG[tx.fraud_type]?.bg || ''} ${FRAUD_TYPE_CONFIG[tx.fraud_type]?.color || ''}`}>
+                            <Fingerprint className="w-3 h-3" />
+                            {FRAUD_TYPE_CONFIG[tx.fraud_type]?.label || tx.fraud_type}
+                          </span>
+                        ) : tx.fraud_type === 'NORMAL' ? (
+                          <span className="text-[10px] text-green-600 font-bold">Normal</span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
                         {tx.is_flagged ? (
@@ -439,7 +474,7 @@ export default function Dashboard() {
                 </AnimatePresence>
                 {transactions.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                       Telemetry empty. Initialize simulation engine to push data.
                     </TableCell>
                   </TableRow>
@@ -472,18 +507,26 @@ export default function Dashboard() {
                 
                 <div className="flex flex-wrap md:flex-col items-start md:items-end gap-2 shrink-0">
                   <Badge variant={getRiskBadgeVariant(selectedTx.risk_level)} className="text-base md:text-lg py-1 px-3 shadow-sm font-bold" style={selectedTx.is_flagged ? { backgroundColor: RISK_COLORS[selectedTx.risk_level], color: 'white' } : {}}>
-                    RISK SCORE: {parseFloat(selectedTx.risk_score).toFixed(1)} / 100
+                    FINAL: {parseFloat(selectedTx.risk_score).toFixed(1)} / 100
                   </Badge>
                   
-                  {/* Phase 11 AI Visibility Badge with Fallback Awareness */}
+                  {/* AI Visibility Badge */}
                   {selectedTx.explanation_source === 'AZURE_OPENAI' ? (
                      <span className="inline-flex items-center gap-1 text-[11px] md:text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-md border border-indigo-500/20 shadow-sm">
-                       <Cpu className="w-3.5 h-3.5 shrink-0" /> AI Powered by Azure OpenAI
+                       <Cpu className="w-3.5 h-3.5 shrink-0" /> Hybrid AI Scoring
                      </span>
                   ) : (
                      <span className="inline-flex items-center gap-1 text-[11px] md:text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-2.5 py-1 rounded-md border border-amber-200 shadow-sm">
-                       <Activity className="w-3.5 h-3.5 shrink-0" /> Rule-Based Engine
+                       <Activity className="w-3.5 h-3.5 shrink-0" /> Rule-Based Only
                      </span>
+                  )}
+
+                  {/* Fraud Type Classification Badge */}
+                  {selectedTx.fraud_type && selectedTx.fraud_type !== 'UNKNOWN' && (
+                    <span className={`inline-flex items-center gap-1 text-[11px] md:text-xs font-black uppercase px-2.5 py-1 rounded-md border shadow-sm ${FRAUD_TYPE_CONFIG[selectedTx.fraud_type]?.bg || 'bg-slate-100'} ${FRAUD_TYPE_CONFIG[selectedTx.fraud_type]?.color || 'text-slate-600'}`}>
+                      <Fingerprint className="w-3.5 h-3.5 shrink-0" />
+                      {FRAUD_TYPE_CONFIG[selectedTx.fraud_type]?.label || selectedTx.fraud_type}
+                    </span>
                   )}
                 </div>
               </div>
@@ -502,6 +545,78 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="px-1">
+                  {/* Hybrid Score Breakdown Panel */}
+                  {selectedTx.ai_risk_score !== null && selectedTx.ai_risk_score !== undefined && (
+                    <div className="bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-pink-500/5 border border-indigo-200 dark:border-indigo-800/40 rounded-xl p-5 mt-4">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Target className="w-4 h-4 text-indigo-500" />
+                        <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Hybrid AI Score Breakdown</h4>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm border">
+                          <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Rule Engine</p>
+                          <p className="text-2xl font-black text-slate-800 dark:text-slate-100">{selectedTx.rule_score ? parseFloat(selectedTx.rule_score).toFixed(1) : (Math.min(100, Math.max(0, (parseFloat(selectedTx.risk_score) - parseFloat(selectedTx.ai_risk_score) * 0.4) / 0.6))).toFixed(1)}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">× 0.6 weight</p>
+                        </div>
+                        <div className="text-center p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-indigo-200 dark:border-indigo-800">
+                          <p className="text-[10px] uppercase tracking-widest font-bold text-indigo-500 mb-1">Azure AI</p>
+                          <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{parseFloat(selectedTx.ai_risk_score).toFixed(1)}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">× 0.4 weight</p>
+                        </div>
+                        <div className="text-center p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm border">
+                          <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-1">AI Confidence</p>
+                          <p className="text-2xl font-black" style={{ color: parseFloat(selectedTx.ai_confidence) >= 80 ? '#22c55e' : parseFloat(selectedTx.ai_confidence) >= 50 ? '#eab308' : '#ef4444' }}>
+                            {parseFloat(selectedTx.ai_confidence).toFixed(0)}%
+                          </p>
+                          <div className="mt-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                            <div className="h-1.5 rounded-full transition-all" style={{ width: `${selectedTx.ai_confidence}%`, backgroundColor: parseFloat(selectedTx.ai_confidence) >= 80 ? '#22c55e' : parseFloat(selectedTx.ai_confidence) >= 50 ? '#eab308' : '#ef4444' }} />
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-center text-muted-foreground mt-3 font-mono">
+                        Formula: ({selectedTx.rule_score ? parseFloat(selectedTx.rule_score).toFixed(1) : (Math.min(100, Math.max(0, (parseFloat(selectedTx.risk_score) - parseFloat(selectedTx.ai_risk_score) * 0.4) / 0.6))).toFixed(1)} × 0.6) + ({parseFloat(selectedTx.ai_risk_score).toFixed(1)} × 0.4) = <span className="font-bold text-foreground">{parseFloat(selectedTx.risk_score).toFixed(1)}</span>
+                      </p>
+
+                      {/* What-If Comparison — AI Impact Proof */}
+                      {(() => {
+                        const finalScore = parseFloat(selectedTx.risk_score);
+                        const aiScore = parseFloat(selectedTx.ai_risk_score);
+                        // rule_score may come from API or we reverse the blend: final = rule*0.6 + ai*0.4
+                        const ruleOnly = selectedTx.rule_score
+                          ? parseFloat(selectedTx.rule_score)
+                          : Math.min(100, Math.max(0, (finalScore - aiScore * 0.4) / 0.6));
+                        if (isNaN(ruleOnly) || isNaN(aiScore)) return null;
+                        const ruleLevel = scoreToLevel(ruleOnly);
+                        const finalLevel = scoreToLevel(finalScore);
+                        const changed = ruleLevel !== finalLevel;
+                        const escalated = finalScore > ruleOnly;
+                        return (
+                          <div className={`mt-4 p-3 rounded-lg border text-sm font-semibold flex items-center gap-3 ${changed ? (escalated ? 'bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-800 text-red-700 dark:text-red-400' : 'bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-800 text-green-700 dark:text-green-400') : 'bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
+                            {changed ? (
+                              escalated ? <ArrowUpRight className="w-5 h-5 text-red-500 shrink-0" /> : <ArrowDownRight className="w-5 h-5 text-green-500 shrink-0" />
+                            ) : <CheckCircle2 className="w-5 h-5 text-slate-400 shrink-0" />}
+                            <div>
+                              {changed ? (
+                                <>
+                                  <span className="font-black">AI {escalated ? 'Escalated' : 'De-escalated'}:</span>{' '}
+                                  Without AI → <span className="font-mono">{ruleOnly.toFixed(1)}</span> ({ruleLevel}).{' '}
+                                  With AI → <span className="font-mono">{finalScore.toFixed(1)}</span> ({finalLevel}).
+                                </>
+                              ) : (
+                                <>Rule engine and AI agree: both assess <span className="font-black">{finalLevel}</span> risk.</>
+                              )}
+                            </div>
+                            {changed && (
+                              <span className={`ml-auto shrink-0 text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${escalated ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                                AI Override
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 py-5 pt-6">
                     <div className="space-y-1 bg-muted/20 p-3 rounded-lg">
                       <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Entity Origin</span>
@@ -560,7 +675,7 @@ export default function Dashboard() {
                           <div className="mt-4 pt-3 border-t border-amber-200/50 dark:border-amber-900/30">
                             <p className="text-xs font-bold text-amber-600 dark:text-amber-500 flex items-center">
                               <AlertOctagon className="w-3.5 h-3.5 mr-1" />
-                              * Using rule-based fallback due to AI unavailability.
+                              * Using rule-based fallback — Azure AI scoring unavailable.
                             </p>
                           </div>
                         )}
@@ -628,6 +743,22 @@ export default function Dashboard() {
           </DialogContent>
         )}
       </Dialog>
+
+      {/* Azure Enterprise Branding Footer */}
+      <footer className="border-t bg-gradient-to-r from-slate-50 via-indigo-50/50 to-slate-50 dark:from-slate-900 dark:via-indigo-950/30 dark:to-slate-900 mt-12">
+        <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+              <Cpu className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Powered by Azure OpenAI</p>
+              <p className="text-[10px] text-muted-foreground tracking-wide">Enterprise-grade AI with auditability, compliance & explainability</p>
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground text-center">AI Impact Challenge — Microsoft Elevate Training Center 2026</p>
+        </div>
+      </footer>
     </div>
   );
 }
