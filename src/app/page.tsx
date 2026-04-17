@@ -105,7 +105,7 @@ export default function Dashboard() {
       if (demoMode && demoStep === 0) setDemoStep(1);
       
       setSimulating(true);
-      setAnalyzingText("Analyzing transactions via AI Engine...");
+      setAnalyzingText("Rule Engine Fast-Pass -> Passing to AI Auditor...");
       
       const requestBody = { count: 8, fraud_percentage: 25 };
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/simulation`, {
@@ -116,13 +116,47 @@ export default function Dashboard() {
 
       // Artificial UX Delay to demonstrate system parsing
       setTimeout(async () => {
-        setAnalyzingText("Completing telemetry validation...");
+        setAnalyzingText("Asynchronous Hold: AI Evaluating...");
         await fetchData();
         setSimulating(false);
       }, 750);
       
     } catch (error) {
       console.error("Simulation failed:", error);
+      setSimulating(false);
+    }
+  };
+
+  const handleSimulateExploit = async () => {
+    try {
+      setSimulating(true);
+      setAnalyzingText("Injecting Zero-Day Contextual Exploit Payload...");
+      
+      // Inject transaction designed to bypass rule engine but trigger AI
+      const payload = {
+        user_id: "USR-007-EVASION",
+        amount: 250000,
+        currency: "IDR",
+        transaction_type: "TRANSFER",
+        location: "Jakarta, Indonesia",
+        device: "Tor-Browser-Relay",
+        device_type: "DESKTOP"
+      };
+
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      setTimeout(async () => {
+        setAnalyzingText("Asynchronous Hold: AI Caught Evasion Tactics!");
+        await fetchData();
+        setSimulating(false);
+      }, 750);
+
+    } catch (error) {
+      console.error("Exploit injection failed", error);
       setSimulating(false);
     }
   };
@@ -156,6 +190,23 @@ export default function Dashboard() {
       console.error("Explanation failed", error);
     } finally {
       setDeepExplainLoading(false);
+    }
+  };
+
+  const handleAnalystAction = async (txId: number, action: 'FALSE_POSITIVE' | 'CONFIRMED_FRAUD') => {
+    try {
+      setTxLoading(true);
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions/${txId}/analyst-action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      });
+      setSelectedTx(null);
+      await fetchData();
+    } catch (error) {
+      console.error("Analyst action failed", error);
+    } finally {
+      setTxLoading(false);
     }
   };
 
@@ -299,10 +350,14 @@ export default function Dashboard() {
                 {analyzingText}
               </motion.span>
             )}
-            <motion.div animate={demoMode && demoStep === 0 ? { scale: [1, 1.05, 1], boxShadow: ["0px 0px 0px rgba(79,70,229,0)", "0px 0px 20px rgba(79,70,229,0.5)", "0px 0px 0px rgba(79,70,229,0)"] } : {}} transition={{ repeat: Infinity, duration: 2 }}>
+            <motion.div animate={demoMode && demoStep === 0 ? { scale: [1, 1.05, 1], boxShadow: ["0px 0px 0px rgba(79,70,229,0)", "0px 0px 20px rgba(79,70,229,0.5)", "0px 0px 0px rgba(79,70,229,0)"] } : {}} transition={{ repeat: Infinity, duration: 2 }} className="flex gap-2">
+              <Button onClick={handleSimulateExploit} disabled={simulating} variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950/50">
+                <ShieldAlert className="w-4 h-4 mr-2" />
+                Zero-Day Exploit
+              </Button>
               <Button onClick={handleSimulate} disabled={simulating} className="shadow-lg bg-indigo-600 hover:bg-indigo-700">
                 {simulating ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Activity className="w-4 h-4 mr-2" />}
-                {simulating ? "Processing..." : "Generate Transactions"}
+                {simulating ? "Processing..." : "Generate Batch"}
               </Button>
             </motion.div>
           </div>
@@ -371,23 +426,24 @@ export default function Dashboard() {
                   <p className="text-2xl font-black mt-1" style={{ color: (summary?.ai_performance?.avg_confidence || 0) >= 80 ? '#22c55e' : (summary?.ai_performance?.avg_confidence || 0) >= 50 ? '#eab308' : '#ef4444' }}>{summary?.ai_performance?.avg_confidence || 0}%</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Agreement Rate</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">False Positive Rate</p>
                   <div className="flex items-baseline gap-1.5 mt-1">
-                    <p className="text-2xl font-black text-green-600">{summary?.ai_performance?.agreement_rate || 0}%</p>
+                    <p className="text-2xl font-black text-rose-500">{summary?.ai_performance?.false_positive_rate || 0}%</p>
                   </div>
-                  <p className="text-[9px] text-muted-foreground mt-0.5">Rule ↔ AI consensus</p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">Incorrectly flagged by Rules</p>
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">AI Overrides</p>
                   <div className="flex items-baseline gap-1.5 mt-1">
-                    <p className="text-2xl font-black text-amber-500">{summary?.ai_performance?.ai_overrides || 0}</p>
+                    <p className="text-2xl font-black text-indigo-500">{summary?.ai_performance?.ai_overrides || 0}</p>
                   </div>
-                  <p className="text-[9px] text-muted-foreground mt-0.5">AI changed outcome</p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">AI corrected the engine</p>
                 </div>
               </div>
               <div className="mt-4 pt-3 border-t">
-                <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">Fraud Types Classified</p>
-                <p className="text-lg font-black text-slate-800 dark:text-slate-100 mt-0.5">{summary?.ai_performance?.fraud_types_detected || 0} <span className="text-xs font-medium text-muted-foreground">unique categories</span></p>
+                <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                  <Fingerprint className="w-3.5 h-3.5" /> Profiles benchmarked against anonymized local fintech behavior variants.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -855,14 +911,40 @@ export default function Dashboard() {
               )}
             </ScrollArea>
 
-            <DialogFooter className="bg-muted/40 -mx-6 -mb-6 p-6 mt-2 border-t flex flex-row items-center justify-between sm:justify-between rounded-b-lg">
-              <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">Recommended Action:</span>
-              <div className={`text-xl flex items-center font-black px-6 py-2.5 rounded-md shadow-sm ${
-                selectedTx.recommended_action === 'BLOCK' ? 'bg-destructive text-destructive-foreground shadow-[0_4px_14px_0_rgba(239,68,68,0.39)]' : 
-                selectedTx.recommended_action === 'VERIFY' ? 'bg-orange-500 text-white shadow-[0_4px_14px_0_rgba(249,115,22,0.39)]' : 
-                'bg-green-500 text-white shadow-[0_4px_14px_0_rgba(34,197,94,0.39)]'
-              }`}>
-                {selectedTx.recommended_action} {selectedTx.recommended_action === 'BLOCK' && <AlertOctagon className="ml-2 w-5 h-5"/>}
+            <DialogFooter className="bg-muted/40 -mx-6 -mb-6 p-6 mt-2 border-t flex flex-col md:flex-row items-center justify-between gap-4 rounded-b-lg">
+              <div className="flex flex-col gap-1 w-full md:w-auto">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Analyst Override</span>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:text-rose-400 font-bold"
+                    onClick={() => handleAnalystAction(selectedTx.id, 'FALSE_POSITIVE')}
+                    disabled={selectedTx.analyst_status !== null}
+                  >
+                    {selectedTx.analyst_status === 'FALSE_POSITIVE' ? <CheckCircle2 className="w-4 h-4 mr-2" /> : "Mark False Positive"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-400 font-bold"
+                    onClick={() => handleAnalystAction(selectedTx.id, 'CONFIRMED_FRAUD')}
+                    disabled={selectedTx.analyst_status !== null}
+                  >
+                    {selectedTx.analyst_status === 'CONFIRMED_FRAUD' ? <CheckCircle2 className="w-4 h-4 mr-2" /> : "Confirm Fraud"}
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-end gap-1 w-full md:w-auto mt-4 md:mt-0">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">System Recommendation</span>
+                <div className={`text-lg flex items-center font-black px-5 py-2 rounded-md shadow-sm ${
+                  selectedTx.recommended_action === 'BLOCK' ? 'bg-destructive text-destructive-foreground shadow-[0_4px_14px_0_rgba(239,68,68,0.39)]' : 
+                  selectedTx.recommended_action === 'VERIFY' ? 'bg-orange-500 text-white shadow-[0_4px_14px_0_rgba(249,115,22,0.39)]' : 
+                  'bg-green-500 text-white shadow-[0_4px_14px_0_rgba(34,197,94,0.39)]'
+                }`}>
+                  {selectedTx.recommended_action} {selectedTx.recommended_action === 'BLOCK' && <AlertOctagon className="ml-2 w-4 h-4"/>}
+                </div>
               </div>
             </DialogFooter>
           </DialogContent>
