@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -12,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Activity, AlertOctagon, BrainCircuit, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck, Zap, ArrowRightSquare, Cpu, Server, PlayCircle, Loader2, Fingerprint, Target, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Activity, AlertOctagon, BrainCircuit, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck, Zap, ArrowRightSquare, Cpu, Server, PlayCircle, Loader2, Fingerprint, Target, TrendingUp, ArrowUpRight, ArrowDownRight, ServerCrash, WifiOff, ChevronLeft, ChevronRight } from "lucide-react";
 
 // IDR Formatting Rule
 const formatIDR = (amount: number) => {
@@ -47,8 +48,13 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(false);
   const [simulating, setSimulating] = useState(false);
   const [analyzingText, setAnalyzingText] = useState("");
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   
   // Phase 11 Features
   const [demoMode, setDemoMode] = useState(false);
@@ -64,9 +70,10 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
+      setApiError(false);
       const [summaryRes, txRes, trendsRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/insights`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions?per_page=15`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions?per_page=15&page=${currentPage}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/trends?period=hourly`)
       ]);
       
@@ -87,10 +94,16 @@ export default function Dashboard() {
           smart_insights: refinedInsights
         });
       }
-      if (txData.status === "success") setTransactions(txData.data);
+      if (txData.status === "success") {
+        setTransactions(txData.data);
+        if (txData.pagination) {
+          setTotalPages(txData.pagination.last_page);
+        }
+      }
       if (trendsData.status === "success") setTrends(trendsData.data);
     } catch (error) {
       console.error("Failed to fetch data:", error);
+      setApiError(true);
     } finally {
       setLoading(false);
     }
@@ -98,7 +111,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentPage]);
 
   const handleSimulate = async () => {
     try {
@@ -118,12 +131,15 @@ export default function Dashboard() {
       setTimeout(async () => {
         setAnalyzingText("Asynchronous Hold: AI Evaluating...");
         await fetchData();
+        setCurrentPage(1); // Reset to first page to see new data
         setSimulating(false);
+        toast.success("Anomaly Batch Simulated", { description: "Azure AI successfully scanned via the audit layer." });
       }, 750);
       
     } catch (error) {
       console.error("Simulation failed:", error);
       setSimulating(false);
+      toast.error("Simulation Failed", { description: "Could not generate anomalies. Engine offline." });
     }
   };
 
@@ -152,12 +168,15 @@ export default function Dashboard() {
       setTimeout(async () => {
         setAnalyzingText("Asynchronous Hold: AI Caught Evasion Tactics!");
         await fetchData();
+        setCurrentPage(1);
         setSimulating(false);
+        toast.success("Zero-Day Exploit Blocked", { description: "AI detected contextual anomalies bypassing rules." });
       }, 750);
 
     } catch (error) {
       console.error("Exploit injection failed", error);
       setSimulating(false);
+      toast.error("Exploit Injection Failed", { description: "API is unreachable." });
     }
   };
 
@@ -203,8 +222,12 @@ export default function Dashboard() {
       });
       setSelectedTx(null);
       await fetchData();
+      toast.success(action === 'FALSE_POSITIVE' ? "False Positive Recorded" : "Fraud Confirmed", { 
+        description: "AI Model heuristics appended. Retraining queue updated." 
+      });
     } catch (error) {
       console.error("Analyst action failed", error);
+      toast.error("Action Failed", { description: "Unable to process analyst action right now." });
     } finally {
       setTxLoading(false);
     }
@@ -233,10 +256,37 @@ export default function Dashboard() {
     { name: 'Critical', value: summary.risk_distribution.CRITICAL || 0, color: RISK_COLORS.CRITICAL },
   ].filter(d => d.value > 0) : [];
 
-  if (loading && !summary) {
+  if (loading && !summary && !apiError) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
         <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (apiError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 p-4">
+        <Card className="w-full max-w-md shadow-2xl border-destructive/20 mt-[-10vh]">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto w-16 h-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mb-4">
+              <WifiOff className="w-8 h-8" />
+            </div>
+            <CardTitle className="text-2xl font-black text-destructive">API Offline</CardTitle>
+            <CardDescription className="text-base mt-2">
+              Unable to establish secure connection to the backend AI Core.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 text-center">
+            <p className="text-sm text-muted-foreground bg-slate-100 dark:bg-slate-900 p-3 rounded-md font-mono text-left">
+              ERR_CONNECTION_REFUSED<br/>
+              HOST: {process.env.NEXT_PUBLIC_API_URL}
+            </p>
+            <Button onClick={() => { setLoading(true); fetchData(); }} className="w-full font-bold shadow-md">
+              <RefreshCw className="w-4 h-4 mr-2" /> Retry Connection
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -473,9 +523,10 @@ export default function Dashboard() {
             <CardTitle>Live Activity Feed</CardTitle>
             <CardDescription>Select any row to view Explainable AI (XAI) deep context.</CardDescription>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <Table className="table-fixed w-full">
-              <TableHeader>
+          <CardContent className="overflow-x-auto p-0">
+            <div className="overflow-x-auto w-full">
+              <Table className="table-fixed w-full min-w-[900px]">
+                <TableHeader>
                 <TableRow>
                   <TableHead className="w-[90px]">Time</TableHead>
                   <TableHead className="w-[160px]">Entity</TableHead>
@@ -559,13 +610,50 @@ export default function Dashboard() {
                 </AnimatePresence>
                 {transactions.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                      Telemetry empty. Initialize simulation engine to push data.
+                    <TableCell colSpan={7} className="text-center py-24 text-muted-foreground bg-slate-50/50 dark:bg-slate-900/50">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <ServerCrash className="w-12 h-12 text-slate-300 dark:text-slate-700" />
+                        <p className="font-bold text-lg text-slate-600 dark:text-slate-400">No Telemetry Signals Detected</p>
+                        <p className="text-sm max-w-sm">The database is currently empty. Initialize the simulation engine to generate organic and high-risk traffic vectors.</p>
+                        <Button onClick={handleSimulate} variant="outline" className="mt-2 border-indigo-200 text-indigo-700 font-bold bg-white shadow-sm">
+                          <Zap className="w-4 h-4 mr-2" /> Start Traffic Simulation
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+            </div>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between p-4 border-t bg-slate-50/50 dark:bg-slate-900/50 rounded-b-xl">
+                <span className="text-sm text-muted-foreground font-medium">
+                  Showing Page {currentPage} of {totalPages}
+                </span>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1 || loading}
+                    className="font-bold shadow-sm"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages || loading}
+                    className="font-bold shadow-sm"
+                  >
+                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
