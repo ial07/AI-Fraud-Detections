@@ -134,9 +134,9 @@ The application is production-ready and optimized for cloud deployment (Vercel, 
 ## Contact & Support
 
 For business inquiries, partnership opportunities, or investment discussions:
-- 📧 Email: [your-email@example.com]
-- 🌐 Website: [your-website.com]
-- 💼 LinkedIn: [your-linkedin-profile]
+- 📧 Email: [ialilham77@gmail.com]
+- 🌐 Website: [[your-website.com](https://ial-porto.vercel.app/)]
+- 💼 LinkedIn: [https://www.linkedin.com/in/ilham-almalik]
 
 ---
 
